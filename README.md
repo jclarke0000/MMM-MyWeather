@@ -1,10 +1,11 @@
-# Module: Weather Underground Forecast
+# Module: Weather Forecast
 
 This is a module for MagicMirror, forked from RedNax67's MMM-WunderGround
 https://github.com/RedNax67/MMM-WunderGround.git
 (MMM-WunderGround is a modified version of the default `weatherforecast` module.)
 
 This is nearly identical to the  `MMM-WunderGround` module with a couple of tweaks and style changes.
+
 
 Five additonal configurations are added:
  - currentweather: 1 or 0
@@ -15,12 +16,19 @@ Five additonal configurations are added:
 
 The Weather Icons used in this module are created and maintained by Erik Flowers. v1.0 artwork by Lukas Bischoff. v1.1 - 2.0 artwork by Erik Flowers www.weathericons.io
 
+Due to end of Life for free Weather Underground API, the module is now tweaked to use the free weatherbit.io API's
+by github user martinkooij. The changed config variables are marked with a "*". 
 
 ## Installing the module
 Clone this repository in your `~/MagicMirror/modules/` folder `( $ cd ~MagicMirror/modules/ )`:
 ````javascript
-git clone https://github.com/jclarke0000/MMM-MyWeather.git
+git clone https://github.com/martinkooij/MMM-MyWeather.git
 ````
+then goto to the module directory and execute in the module directory
+````javascript
+npm install
+````
+to install the dependencies
 
 ## Using the module
 
@@ -32,7 +40,8 @@ modules: [
     position: 'top_right',
     config: {
       apikey: 'xxxxxxxxxxxxx', // private; don't share!
-      pws: 'pws:IGELDERL219', //culemborg
+      lat: "51.95", // Culemborg, NL ;)
+      lon: "5.23" , // use the quotes! 
       hourly: '1',
       fctext: '1',
       fcdaycount: "5",
@@ -43,8 +52,7 @@ modules: [
       alerttruncatestring: "english:",
       roundTmpDecs: 1,
       UseCardinals: 0,
-      layout: "horizontal",
-      sysstat: 0
+      layout: "horizontal"
     }
   },
 ]
@@ -64,20 +72,24 @@ The following properties can be configured:
 	</thead>
 	<tbody>
 		<tr>
-			<td><code>pws</code></td>
-			<td>Can be any WU api location info.<br><br><b>US Example:</b> <code>NY/New_York</code><br><b>Example:</b> <code>locid:NLXX8014;loctype:1</code><br><br> This value is <b>REQUIRED</b>
+			<td><code>lat</code></td>
+			<td>* latitude. Format String (N.B. dont enter a number, use a string instead) <br><br> This value is <b>REQUIRED</b>
+			</td>
+		</tr>
+		<tr>
+			<td><code>lon</code></td>
+			<td>* longitude. Format String (N.B. dont enter a number, use a string instead) <br><br> This value is <b>REQUIRED</b>
 			</td>
 		</tr>
 		<tr>
 			<td><code>apikey</code></td>
-			<td>The <a href="https://www.wunderground.com/weather/api/d/pricing">Weather Underground</a> API key, which can be obtained by creating an OpenWeatherMap account. You need either Cumulus or Anvil plan for this module. As long as you make less than 500 queries a day, this is free.<br>
-				<br> This value is <b>REQUIRED</b>
+			<td>* The <a href="https://www.weatherbit.io">Weatherbit</a> API key, which can be obtained by creating an weatherbits account. 
 			</td>
 		</tr>
 		<tr>
 			<td><code>units</code></td>
-			<td>What units to use. Specified by config.js<br>
-				<br><b>Possible values:</b> <code>config.units</code> = Specified by config.js, <code>default</code> = Kelvin, <code>metric</code> = Celsius, <code>imperial</code> =Fahrenheit
+			<td>* What units to use. Specified by config.js<br>
+				<br><b>Possible values:</b> <code>config.units</code> = Specified by config.js,  <code>metric</code> = Celsius [default], <code>imperial</code> =Fahrenheit
 				<br><b>Default value:</b> <code>config.units</code>
 			</td>
 		</tr>
@@ -146,10 +158,10 @@ The following properties can be configured:
 		</tr>
 		<tr>
 			<td><code>hourlyinterval</code></td>
-			<td>Hours between hourly forecasts. Specified by config.js<br>
-				<br><b>Possible values:</b> <code>1</code> - <code>24</code>
+			<td>* Hours between hourly forecasts. Specified by config.js<br>
+				<br><b>Possible values:</b> <code>3</code>
 				<br><b>Default value:</b> <code>3</code> (Will display hourly forecasts with 3 hour interval)
-				<br>This value is optional.
+				<br>* This value cannot be set anymore. Hourly forcasts only come in 3h intervals, whatever the value of this parameter. 
 			</td>
 		</tr>
 		<tr>
@@ -203,17 +215,39 @@ The following properties can be configured:
 			</td>
 		</tr>
 		<tr>
-			<td><code>alerttime</code></td>
-			<td>The amount of time the alert is duisplayed. (Milliseconds)<br>
-				<br><b>Possible values:</b> <code>1000</code> - <code>60000</code>
-				<br><b>Default value:</b>  <code>10000</code>
+			<td><code>alarmUrl</code></td>
+			<td>the url of the metoalarm.eu RSS stream for your region(!) <br>
+				<br><b>Example values:</b> https://meteoalarm.eu/documents/rss/nl/NL019.rss </code>
+				<br><b>Default value:</b>  <code>null</code>
 			</td>
 		</tr>
 		<tr>
-			<td><code>alerttruncatestring</code></td>
-			<td>Truncates the aletr text at the defined word (Milliseconds)<br>
-				<br><b>Possible values:</b> <code>any string</code>
-				<br><b>Default value:</b>  <code></code>
+			<td><code>showAlarmText</code></td>
+			<td>show alert texts with the icons...<br>
+				<br><b>Possible values:</b> <code>1 or 0</code>
+				<br><b>Default value:</b>  <code>0</code>  (only Icons)
+			</td>
+		</tr>
+		<tr>
+			<td><code>iconAlarmArray</code></td>
+			<td>Array with the text (in your language) to be used with the alarm icons. The first item of the array is the general text. <br>
+				<br><b>Possible values:</b> <code>array of 14 strings</code>
+				<br><b>Default value:</b>  <code>[
+			"Weather Alarm(s)"</code>,
+			<code>"Wind"</code>,
+			<code>"Snow/Ice"</code>,
+			<code>"Thunderstorms"</code>,	
+			<code>"Fog"</code>,
+			<code>"Extreme high temperature"</code>,
+			<code>"Extreme low temperature"</code>,
+			<code>"Coastal Threat"</code>,
+			<code>"Forestfire"</code>,
+			<code>"Avalanches"</code>,
+			<code>"Rain"</code>,
+			<code>"Rain"</code>,
+			<code>"Flooding"</code>,
+			<code>"Rain & Flooding</code>"
+			]</code>
 			</td>
 		</tr>
 		<tr>

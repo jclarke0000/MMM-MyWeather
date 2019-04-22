@@ -62,11 +62,15 @@
 }
 
 .MMM-MyWeather .yellow {
-  color: yellow;
+  color: #eef240;
 }
 
 .MMM-MyWeather .red {
-  color: #FF4C4C;
+  color: #ee3939;
+}
+
+.MMM-MyWeather .orange {
+  color: #FFA500;
 }
 
 .MMM-MyWeather .center {
@@ -184,10 +188,14 @@
 }
 
 .MMM-MyWeather .forecastText {
-  text-align: center;
+  text-align: left;
   font-size: 20px;
-  color: #FFF;
+  line-height: normal;
   margin-bottom: 6px;
+}
+
+.MMM-MyWeather .thinText {
+	  font-weight: 200 ;
 }
 
 

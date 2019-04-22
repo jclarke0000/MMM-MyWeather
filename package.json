@@ -1,0 +1,28 @@
+{
+  "name": "mmm-myweather",
+  "version": "1.0.0",
+  "description": "Weather module for Magic mirror",
+  "main": "MMM-MyWeather.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/martinkooij/MMM-MyWeather.git"
+  },
+  "keywords": [
+    "\"magic",
+    "mirror\"",
+    "\"weather",
+    "module\""
+  ],
+  "author": "Martin Kooij",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/martinkooij/MMM-MyWeather/issues"
+  },
+  "homepage": "https://github.com/martinkooij/MMM-MyWeather#readme",
+  "dependencies": {
+    "rss-parser": "^3.7.0"
+  }
+}

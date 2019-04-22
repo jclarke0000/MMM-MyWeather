@@ -2,6 +2,10 @@
 
   Magic Mirror Module: 
   MMM-MyWeather
+  By Martin Kooij (github user "martinkooij")
+  using weatherbits API
+  
+  Fork of MMM-MyWeather
   By Jeff Clarke
 
   Fork of MMM-WunderGround
@@ -17,7 +21,8 @@ Module.register("MMM-MyWeather", {
   // Default module config.
   defaults: {
     apikey: "",
-    pws: "",
+    len: "40.712778",
+	lon: "-74.005833",
     currentweather: 1,
     currentweatherdetails: 1,
     forecasttable: 1,
@@ -49,15 +54,33 @@ Module.register("MMM-MyWeather", {
     scaletxt: 1,
     iconset: "VCloudsWeatherIcons",
 		debug: 0,
-		socknot: "GET_WUNDERGROUND",
-		sockrcv: "WUNDERGROUND",
+		socknot: "GET_WEATHERBIT",
+		sockrcv: "WEATHERBIT",
     enableCompliments: 0,
     itemsPerRow: 4,
 
     retryDelay: 2500,
 
-    apiBase: "http://api.wunderground.com/api/",
-
+    apiBase: "http://api.weatherbit.io/v2.0",
+	alarmUrl: null,
+	showAlarmText: 1,
+    iconAlarmArray: [
+			"Weather Alarm(s)",
+			"Wind",
+			"Snow/Ice",
+			"Thunderstorms",	
+			"Fog",
+			"Extreme high temperature",
+			"Extreme low temperature",
+			"Coastal Threat",
+			"Forestfire",
+			"Avalanches",
+			"Rain",
+			"Rain",
+			"Flooding",
+			"Rain & Flooding"
+			],
+	 
     iconTableDay: {
       "chanceflurries": "wi-day-snow-wind",
       "chancerain": "wi-day-showers",
@@ -123,8 +146,36 @@ Module.register("MMM-MyWeather", {
       "snow": "13",
       "tstorms": "11"
     }
+	
+   },
 
-  },
+   wbCode2TextTable:  {
+	"20": "tstorms",
+	"23": "tstorms",
+	"30": "chancerain",
+	"50": "rain",
+	"51": "rain",
+	"52": "rain",
+	"60": "snow",
+	"61": "sleet",
+	"62": "fulrries",
+	"63": "flurries",
+    "70": "fog",
+	"71": "fog",
+	"71": "haze",
+	"73": "fog",
+	"74": "fog",
+	"75": "fog",
+	"800": "clear",
+	"801": "mostlysunny",
+	"802": "partlysunny",
+	"803": "mostlycloudy",
+	"804": "cloudy",
+	"90": "chancerain"
+	},
+	
+	
+	
 
   // Define required translations.
   getTranslations: function() {
@@ -162,26 +213,15 @@ Module.register("MMM-MyWeather", {
     this.loaded = false;
     this.error = false;
     this.errorDescription = "";
-    this.getWunder();
+    this.getWeatherbit();
     this.updateTimer = null;
-    this.systemp = "";
-    this.wifiap = "";
-    this.wifistrength = "";
-    this.storage_size = 0;
-    this.storage_used = 0;
-    this.storage_free = 0;
-    this.storage_pcent = 0;
-    this.mem_used = 0;
-    this.mem_size = 0;
-    this.mem_free = 0;
     this.haveforecast = 0;
   },
 
-  getWunder: function() {
+  getWeatherbit: function() {
     if ( this.config.debug === 1 ) {
 			Log.info("WunderGround: Getting weather.");
 		}
-    //this.sendSocketNotification("GET_WUNDERGROUND", this.config);
     this.sendSocketNotification(this.config.socknot, this.config);
   },
 
@@ -254,6 +294,10 @@ Module.register("MMM-MyWeather", {
         } else {
           windDirectionIcon.innerHTML = this.windDirectionTxt;
         }
+		
+//		Log.log("WIND: ") ;
+//		Log.log(windDirectionIcon) ;
+		
         row_sitrep.appendChild(windDirectionIcon);
 
         var HumidityIcon = document.createElement("td");
@@ -328,10 +372,13 @@ Module.register("MMM-MyWeather", {
 
         if (this.config.fctext == 1) {
           var forecastTextCell = document.createElement("td");
-          // forecastTextCell.className = "forecastText";
+		  
+		  this.forecastText += this.alarmIcons.join(" &nbsp; &nbsp; ") ;
+				
+		  forecastTextCell.className = "forecastText";
           forecastTextCell.setAttribute("colSpan", "10");
           forecastTextCell.innerHTML = this.forecastText;
-
+		  
           row.appendChild(forecastTextCell);
         }
 
@@ -384,7 +431,7 @@ Module.register("MMM-MyWeather", {
             // forecast = this.hourlyforecast[f * this.config.hourlyinterval];
 
           var counter = 0;
-          for (var i = Number(this.config.hourlyinterval) - 1; i < this.hourlyforecast.length; i += Number(this.config.hourlyinterval)) {
+		  for (var i = 0; i < this.hourlyforecast.length; i++) {
             forecast = this.hourlyforecast[i];
 
             row = document.createElement("tr");
@@ -535,8 +582,10 @@ Module.register("MMM-MyWeather", {
         if (this.config.fctext == 1) {
             // var row = document.createElement("tr");
             var forecastTextCell = document.createElement("div");
-
-            forecastTextCell.className = "forecastText";
+			
+		    this.forecastText += this.alarmIcons.join(" &nbsp; &nbsp; ") ;
+				
+			forecastTextCell.className = "forecastText";
             // forecastTextCell.setAttribute("colSpan", "10");
             forecastTextCell.innerHTML = this.forecastText;
 
@@ -649,10 +698,10 @@ Module.register("MMM-MyWeather", {
 
 
           // for (f in this.forecast) {
-          //   forecast = this.hourlyforecast[f * Number(this.config.hourlyinterval)];
+          //   forecast = this.hourlyforecast[f * Number(this.config.hourlyinterval)]; always 3 hours
 
           var counter = 0;
-          for (var i = Number(this.config.hourlyinterval) - 1; i < this.hourlyforecast.length; i += Number(this.config.hourlyinterval)) {
+          for (var i = 0; i < this.hourlyforecast.length; i++) {
             forecast = this.hourlyforecast[i];
 
             hourCell = document.createElement("td");
@@ -890,23 +939,7 @@ Module.register("MMM-MyWeather", {
 
   processWeather: function(data) {
 
-    if (data.current_observation.estimated.hasOwnProperty("estimated") && this.haveforecast == 1) {
-      if ( this.config.debug === 1 ) {
-			  console.log("WeatherUnderground served us an estimated forecast. Skipping update...");
-      }
-      return;
-    }
-
     this.haveforecast = 1;
-
-    if (data.response.hasOwnProperty("error")) {
-
-      this.errorDescription = data.response.error.description;
-      this.error = true;
-      this.updateDom(this.config.animationSpeed);
-
-    } else {
-
       this.error = false;
       var forecast;
       var i;
@@ -914,187 +947,172 @@ Module.register("MMM-MyWeather", {
       var iconTable = this.config.iconTableDay;
       this.alerttext = "";
       this.alertmsg = "";
+	  const waxing = Symbol("waxing") ;
+	  const waning = Symbol("waning") ;
+	  var moonDirection ;
+	  var aspectofMoon ;
+	  var latitude ;
+	  this.alarmLevel = 0 ;
 
       var now = new Date();
+	  
+//	  Log.log(data.current.data[0].country_code)
+	  
+	  this.sendSocketNotification("COUNTRY", data.current.data[0].country_code );
 
-      var sunrise = new Date();
-      this.sunrhour = Number(data.sun_phase.sunrise.hour);
-      sunrise.setHours(data.sun_phase.sunrise.hour);
-      sunrise.setMinutes(data.sun_phase.sunrise.minute);
-
-      var sunset = new Date();
-      this.sunshour = Number(data.sun_phase.sunset.hour);
-      sunset.setHours(data.sun_phase.sunset.hour);
-      sunset.setMinutes(data.sun_phase.sunset.minute);
-
+      var sunrise = new Date(data.daily.data[0].sunrise_ts * 1000);
+//      this.sunrhour = Number(data.current.data[0].sunrise.substr(0,2));
+//      sunrise.setHours(data.current.data[0].sunrise.substr(0,2));
+//      sunrise.setMinutes(data.current.data[0].sunrise.substr(3,2));
+//      sunrise = moment.utc(data.current.data[0].sunrise) ;
+	  
+      var sunset = new Date(data.daily.data[0].sunset_ts * 1000);
+//      this.sunshour = Number(data.current.data[0].sunset.substr(0,2));
+//      sunset.setHours(data.current.data[0].sunset.substr(0,2));
+//      sunset.setMinutes(data.current.data[0].sunset.substr(3,2));
+//      sunset = moment.utc(data.current.data[0].sunset) ;
       // The moment().format("h") method has a bug on the Raspberry Pi.
       // So we need to generate the timestring manually.
       // See issue: https://github.com/MichMich/MagicMirror/issues/181
+	  
+	  if (this.config.debug === 1) { 
+	  Log.log("Sunrise: "+ moment(sunrise).format() );
+	  Log.log("Sunset: "+ moment(sunset).format() );
+	  Log.log("Now: "+ moment(now).format() );
+	  Log.log("Inbetween = " + (sunrise < now && sunset > now)) ;
+	  }
 
       var sunriseSunsetDateObject = (sunrise < now && sunset > now) ? sunset : sunrise;
         
       if (this.config.enableCompliments === 1) {
         var complimentIconSuffix = (sunrise < now && sunset > now) ? "d" : "n";
-        var complimentIcon = '{"data":{"weather":[{"icon":"' + this.config.iconTableCompliments[data.current_observation.icon] + complimentIconSuffix + '"}]}}';
+        var complimentIcon = '{"data":{"weather":[{"icon":"' + this.config.iconTableCompliments[this.wbCode2Text(data.current.data[0].weather.code)] + complimentIconSuffix + '"}]}}';
         var complimentIconJson = JSON.parse(complimentIcon);
         this.sendNotification("CURRENTWEATHER_DATA", complimentIconJson);
       }
         
       var timeString;
-      if (this.config.timeFormat.indexOf("H") != -1) {
+      if (this.config.timeFormat.indexOf("H") != -1 || this.config.timeFormat.indexOf("k") != -1) {
         timeString = moment(sunriseSunsetDateObject).format("HH:mm");
       } else {
         timeString = moment(sunriseSunsetDateObject).format("h:mm a");
       }
 
-      // if (this.config.timeFormat !== 24) {
-      //   if (this.config.showPeriod) {
-      //     if (this.config.showPeriodUpper) {
-      //       timeString = moment(sunriseSunsetDateObject).format("h:mm A");
-      //     } else {
-      //       timeString = moment(sunriseSunsetDateObject).format("h:mm a");
-      //     }
-      //   } else {
-      //     timeString = moment(sunriseSunsetDateObject).format("h:mm");
-      //   }
-      // }
-
+	  
       this.sunriseSunsetTime = timeString;
       this.sunriseSunsetIcon = (sunrise < now && sunset > now) ? "wi-sunset" : "wi-sunrise";
       this.iconTable = (sunrise < now && sunset > now) ? this.config.iconTableDay : this.config.iconTableNight;
 
-			var now = new Date();
-			var firstAlert = 1;
 
-      for (i = 0, count = data.alerts.length; i < count; i++) {
-		
-				var expire = data.alerts[i].expires;
-				expire = expire.substring(0, expire.length - 4) + 'Z';
-				if ( moment(expire).isAfter(now) ) {
-
-					var talert = data.alerts[i].description;
-					var malert = data.alerts[i].message;
-					if (talert.length < malert.length) {
-						talert = malert;
-					}
-					if (this.config.alerttruncatestring !== "") {
-						var ialert = talert.indexOf(this.config.alerttruncatestring);
-						if (ialert > 0) {
-							talert = talert.substring(1, ialert);
-						}
-					}
-
-					if (firstAlert === 0) {
-						this.alerttext = this.alerttext + "<BR>";
-					}
-					
-					this.alertmsg = this.alertmsg + talert;
-					
-					firstAlert = 0;
-
-					this.alerttext = this.alerttext + "<B style=\"color:" +
-						data.alerts[i].level_meteoalarm_name + "\">" + this
-						.translate(data.alerts[i].type) + "</B>";
-				}
-      }
-
-      if (this.alertmsg !== "" && this.config.show_popup == 1) {
-        this.sendNotification("SHOW_ALERT", {
-          type: "alert",
-          message: this.alertmsg,
-          title: this.alerttext,
-          timer: this.config.alerttime
-        });
-      }
-
-      this.weatherType = this.iconTable[data.current_observation.icon];
+      this.weatherType = this.iconTable[this.wbCode2Text(data.current.data[0].weather.code)];
         
       //Log.info("observation logo " + this.weatherType)
-      this.windDirection = this.deg2Cardinal(data.current_observation.wind_degrees);
-      this.windDirectionTxt = data.current_observation.wind_dir;
-      this.Humidity = data.current_observation.relative_humidity;
-      this.Humidity = this.Humidity.substring(0, this.Humidity.length - 1);
-      this.windSpeed = "wi-wind-beaufort-" + this.ms2Beaufort(data.current_observation.wind_kph);
-      this.windSpeedKph = data.current_observation.wind_kph;
-      this.windSpeedMph = data.current_observation.wind_mph;
-      this.moonPhaseIcon = "<img class='moonPhaseIcon' src='https://www.wunderground.com/graphics/moonpictsnew/moon" + data.moon_phase.ageOfMoon + ".gif'>";
-
-
+      this.windDirection = this.deg2Cardinal(data.current.data[0].wind_dir);
+      this.windDirectionTxt = data.current.data[0].wind_cdir;
+      this.Humidity = data.current.data[0].rh;
+      this.windSpeed = "wi-wind-beaufort-" + this.ms2Beaufort(data.current.data[0].wind_spd * 3.6); // in m/s from API
+      this.windSpeedKph = Math.round(data.current.data[0].wind_spd * 3.6) ;
+      this.windSpeedMph = Math.round(data.current.data[0].wind_spd * 2.237) ;
+	  aspectofMoon = data.daily.data[0].moon_phase ;
+	  moonDirection = (data.daily.data[0].moon_phase - data.daily.data[1].moon_phase < 0)? waxing : waning ;
+	  latitude = data.current.data[0].lat ;
+      this.moonPhaseIcon = "<img class='moonPhaseIcon' " +
+	       "src='https://www.timeanddate.com/scripts/moon.php?i=" + 
+		   aspectofMoon +
+		   "&p=" +
+		   (((latitude>=0 && moonDirection == waxing) || (latitude < 0 && moondirection == waning) )? "0" : "3.14") +
+		   "&r=0.833' >" ;
+ 
       if (this.config.units == "metric") {
-        this.temperature = data.current_observation.temp_c;
-        var fc_text = data.forecast.txt_forecast.forecastday[0].fcttext_metric.replace(/(.*\d+)(C)(.*)/gi, "$1°C$3");
+        this.temperature = data.current.data[0].temp ;
       } else {
-        this.temperature = data.current_observation.temp_f;
-        var fc_text = data.forecast.txt_forecast.forecastday[0].fcttext;
+        this.temperature = data.current.data[0].temp * 1.8 + 32 ;
       }
-
-      // Attempt to scale txt_forecast in case it results in too many lines
-      // var fc_text = data.forecast.txt_forecast.forecastday[0].fcttext_metric.replace(/(.*\d+)(C)(.*)/gi, "$1°C$3");
-      var fc_wrap = 35;
-      var fc_flines = 3;
-      var fc_scale = 100;
-      if (this.config.scaletxt == 1) {
-        var fc_lines = fc_text.length / fc_wrap;
-        if (fc_lines > fc_flines) {
-          fc_scale = Math.round((fc_flines / fc_lines) * 100);
-          fc_wrap = Math.round(fc_wrap * (100 / fc_scale));
-        }
-      }
-      // this.forecastText = '<div style="font-size:' + fc_scale + '%">';
-      // this.forecastText = this.forecastText + this.wordwrap(fc_text, fc_wrap, "<BR>");
-      this.forecastText = fc_text;
-      // console.log("Wrap: " + fc_wrap + " Scale: " + fc_scale + " Lines: " + fc_lines + " Length: " + fc_text.length);
+	  
+	  var fc_text = 
+		data.current.data[0].city_name + ". " +
+		this.translate("TODAY") + ": " + 
+		data.daily.data[0].weather.description + ", "+
+		this.translate("TOMORROW").toLowerCase() + ": " +
+		data.daily.data[1].weather.description + "." ;
+	  
+	  
+	  this.alarmIcons = [] ;
+	  if (data.alarm != null) {
+		  var welement ;
+		  for (let w of data.alarm) {
+			  if (w.level >=2 ) {
+				welement = ' <img border="1" src="https://www.meteoalarm.eu/documents/rss/wflag-l' + w.level +
+				"-t" + w.type + '.jpg" >' ;
+				if (this.config.showAlarmText) {
+					welement += ("&nbsp;" + this.config.iconAlarmArray[w.type]) ;
+				}
+				this.alarmIcons.push(welement) ;
+			  }
+		  }
+	  }
+	  
+	  this.forecastText = fc_text;
+	  
+	  if (this.alarmIcons.length != 0) { 
+			this.alarmIcons[0] = 
+				"<br />" + 
+				this.config.iconAlarmArray[0] + 
+				" " +
+				data.alarm[0].title + 
+				": &nbsp; " +
+				this.alarmIcons[0] ;
+	  }
+	  
+//	  Log.log(this.alarmIcons) ;
 
       this.temperature = this.roundValue(this.temperature);
       this.weatherTypeTxt = "<img src='./modules/MMM-MyWeather/img/" + this.config.iconset + "/" +
-          data.current_observation.icon_url.replace('http://icons.wxug.com/i/c/k/', '').replace('.gif', '.png') +
-          "' style='vertical-align:middle' class='currentWeatherIcon'>";
-
-      if (this.alerttext !== "") {
-        this.forecastText = "<B>" + this.alerttext + "</B><BR>" + this.forecastText;
-      }
-
+          this.wbCode2Text(data.current.data[0].weather.code) +
+          ".png' style='vertical-align:middle' class='currentWeatherIcon'>";
 
       this.forecast = [];
-      for (i = this.config.fcdaystart, count = data.forecast.simpleforecast.forecastday.length; i < Number(this.config.fcdaycount) + 1; i++) {
+      for (i = this.config.fcdaystart, count = data.daily.data.length; i < Number(this.config.fcdaycount) + 1; i++) {
 
-        forecast = data.forecast.simpleforecast.forecastday[i];
+        forecast = data.daily.data[i];
 
         if (this.config.units == "metric") {
-          this.tmaxTemp = forecast.high.celsius;
-          this.tminTemp = forecast.low.celsius;
-          if (Number(forecast.snow_allday.cm) > 0) {
-            this.tmm = forecast.snow_allday.cm + "cm";
+          this.tmaxTemp = forecast.max_temp;
+          this.tminTemp = forecast.min_temp;
+          if (forecast.snow > 0) {
+            this.tmm = Math.round(forecast.snow * 10) / 100 + "cm";
           } else {
-            this.tmm = forecast.qpf_allday.mm + "mm";
+            this.tmm = Math.round(forecast.precip * 10) / 10 + "mm";
           }
         } else {
-          this.tmaxTemp = forecast.high.fahrenheit;
-          this.tminTemp = forecast.low.fahrenheit;
-          if (Number(forecast.snow_allday.in) > 0) {
-            this.tmm = forecast.snow_allday.in + "in";
+          this.tmaxTemp = forecast.max_temp * 1.8 + 32;
+          this.tminTemp = forecast.min_temp * 1.8 + 32;
+          if (forecast.snow > 0) {
+            this.tmm = Math.round(forecast.snow / 2.54) / 10 + "in";
           } else {
-            this.tmm = forecast.qpf_allday.in + "in";
+            this.tmm = Math.round(forecast.precip / 2.54) / 10 + "in";
           }
         }
 
-        this.maxTemp = this.roundValue(this.maxTemp);
-        this.minTemp = this.roundValue(this.minTemp);
+        this.maxTemp = this.roundValue(this.tmaxTemp);
+        this.minTemp = this.roundValue(this.tminTemp);
 
-        this.windDir = this.deg2Cardinal(forecast.maxwind.degrees);
-        this.windDirImp = forecast.maxwind.dir;
-        this.windSpd = "wi-wind-beaufort-" + this.ms2Beaufort(forecast.maxwind.kph);
-        this.windSpdKph = forecast.maxwind.kph;
-        this.windSpdMph = forecast.maxwind.mph;
+        this.windDir = this.deg2Cardinal(forecast.wind_dir);
+        this.windDirImp = forecast.wind_cdir;
+        this.windSpd = "wi-wind-beaufort-" + this.ms2Beaufort(forecast.wind_spd*3.6);
+        this.windSpdKph = Math.round(forecast.wind_spd * 3.6);
+        this.windSpdMph = Math.round(forecast.wind_spd * 2.24);
 
-        this.icon_url = "<img style='max-height:100%; max-width:100%; vertical-align:middle' src='./modules/MMM-MyWeather/img/" + this.config.iconset + "/" +
-            forecast.icon_url.replace('http://icons.wxug.com/i/c/k/', '').replace('.gif', '.png') + "' class='forecastWeatherIcon'>";
+        this.icon_url = "<img style='max-height:100%; max-width:100%; vertical-align:middle' src='./modules/MMM-MyWeather/img/" + 
+						this.config.iconset + "/" +
+						this.wbCode2Text(forecast.weather.code) + 
+						".png' class='forecastWeatherIcon'>";
 
         this.forecast.push({
-          day: forecast.date.weekday_short,
-          maxTemp: this.tmaxTemp,
-          minTemp: this.tminTemp,
-          icon: this.config.iconTableDay[forecast.icon],
+          day: moment(forecast.valid_date).format("ddd"),
+          maxTemp: this.maxTemp,
+          minTemp: this.minTemp,
+          icon: this.config.iconTableDay[this.wbCode2Text(forecast.weather.code)],
           icon_url: this.icon_url,
           pop: forecast.pop,
           windDir: this.windDir,
@@ -1109,50 +1127,50 @@ Module.register("MMM-MyWeather", {
 
       if (this.config.hourly == 1) {
         this.hourlyforecast = [];
-        for (i = 0, count = data.hourly_forecast.length; i < count; i++) {
+        for (i = 0 ; i < data.hourly.data.length ; i += 3) {  
 
-        // count = 0;
-        // for (i = this.config.hourlyinterval, i < data.hourly_forecast.length; i = i + this.config.hourlyinterval) {
-          var hourlyforecast = data.hourly_forecast[i];
+          var hourlyforecast = data.hourly.data[i];
 
           if (this.config.units == "metric") {
-            this.tmaxTemp = hourlyforecast.temp.metric;
-            this.tminTemp = hourlyforecast.feelslike.metric;
-            if (Number(forecast.snow_allday.cm) > 0) {
-              this.tmm = hourlyforecast.snow.metric + "cm";
+            this.tmaxTemp = hourlyforecast.temp;
+            this.tminTemp = hourlyforecast.app_temp;
+            if (forecast.snow > 0) {
+              this.tmm = Math.round(hourlyforecast.snow) / 10 + "cm";
             } else {
-              this.tmm = hourlyforecast.qpf.metric + "mm";
+              this.tmm = Math.round(hourlyforecast.precip * 10 ) / 10+ "mm";
             }
-            this.thour = hourlyforecast.FCTTIME.hour + ":00";
+            this.thour = moment(hourlyforecast.timestamp_local).format("HH:mm");
           } else {
-            this.tmaxTemp = hourlyforecast.temp.english;
-            this.tminTemp = hourlyforecast.feelslike.english;
-            if (Number(forecast.snow_allday.in) > 0) {
-              this.tmm = hourlyforecast.snow.english + "in";
+            this.tmaxTemp = hourlyforecast.temp * 1.8 + 32;
+            this.tminTemp = hourlyforecast.app_temp * 1.8 + 32;
+            if (forecast.snow > 0) {
+              this.tmm = Math.round(hourlyforecast.snow / 2.54) / 10 + "in";
             } else {
-              this.tmm = hourlyforecast.qpf.english + "in";
+              this.tmm = Math.round(hourlyforecast.precip / 2.54) / 10 + "in";
             }
-            this.thour = hourlyforecast.FCTTIME.hour + ":00";
+            this.thour = moment(hourlyforecast.timestamp_local).format("HH:mm");
           }
 
-          this.tthour = Number(hourlyforecast.FCTTIME.hour);
-          this.ForecastIcon = (this.sunrhour < this.tthour &&
-          this.sunshour > this.tthour) ? this.config.iconTableDay[hourlyforecast.icon] : this.config.iconTableNight[hourlyforecast.icon];
+          this.tthour = Number(moment(hourlyforecast.timestamp_local).format("HH"));
+          this.ForecastIcon = 
+				(this.sunrhour < this.tthour && this.sunshour > this.tthour) ? 
+				this.config.iconTableDay[this.wbCode2Text(hourlyforecast.weather.code)] : 
+				this.config.iconTableNight[this.wbCode2Text(hourlyforecast.weather.code)];
 
           this.ForecastIconUrl = "<img style='max-height:100%; max-width:100%; vertical-align:middle' src='./modules/MMM-MyWeather/img/" + this.config.iconset + "/" +
-            hourlyforecast.icon_url.replace('http://icons.wxug.com/i/c/k/', '').replace('.gif', '.png') + "' class='forecastWeatherIcon'>";
+            this.wbCode2Text(hourlyforecast.weather.code) + ".png' class='forecastWeatherIcon'>";
 
-          this.windDir = this.deg2Cardinal(hourlyforecast.wdir.degrees);
-          this.windDirImp = hourlyforecast.wdir.dir;
-          this.windSpd = "wi-wind-beaufort-" + this.ms2Beaufort(hourlyforecast.wspd.metric);
-          this.windSpdKph = hourlyforecast.wspd.metric;
-          this.windSpdMph = hourlyforecast.wspd.english;
+          this.windDir = this.deg2Cardinal(hourlyforecast.wind_dir);
+          this.windDirImp = hourlyforecast.wind_cdir;
+          this.windSpd = "wi-wind-beaufort-" + this.ms2Beaufort(hourlyforecast.wind_spd * 3.6);
+          this.windSpdKph = hourlyforecast.wind_spd * 3.6;
+          this.windSpdMph = hourlyforecast.wind_spd * 2.24;
 
 
           this.hourlyforecast.push({
             hour: this.thour,
-            maxTemp: this.tmaxTemp,
-            minTemp: this.tminTemp,
+            maxTemp: this.roundValue(this.tmaxTemp),
+            minTemp: this.roundValue(this.tminTemp),
             icon: this.ForecastIcon,
             icon_url: this.ForecastIconUrl,
             pop: hourlyforecast.pop,
@@ -1168,12 +1186,11 @@ Module.register("MMM-MyWeather", {
 
       if ( this.config.debug === 1 ) {
 		    Log.log(this.forecast);
+			Log.log(this.hourlyforecast);
       }
 
       this.loaded = true;
       this.updateDom(this.config.animationSpeed);
-    }
-
   },
 
 
@@ -1278,55 +1295,23 @@ Module.register("MMM-MyWeather", {
 	    Log.info('Wunderground received ' + notification);
     }
 
-    if (notification === 'WIFI_STRENGTH') {
-	    if ( this.config.debug === 1 ) {
-		   Log.info('received WIFI_STRENGTH');
-		   Log.info(payload.wifi_strength);
-	    }
-      this.wifiap = payload.wifi_ap;
-      this.wifistrength = payload.wifi_strength;
-      self.updateDom(self.config.animationSpeed);
-    }
-
-    if (notification === 'SYSTEM_TEMP') {
-      if ( this.config.debug === 1 ) {
-        Log.info('received SYSTEM_TEMP');
-        Log.info(payload.system_temp);
-		  }
-      this.systemp = payload.system_temp;
-      self.updateDom(self.config.animationSpeed);
-    }
-
-    if (notification === 'SYSTEM_MEM') {
-      if ( this.config.debug === 1 ) {
-  			Log.info('received SYSTEM_MEM');
-  			Log.info(payload);
-  		}
-      this.mem_size = payload.mem_size;
-      this.mem_used = payload.mem_used;
-      this.mem_free = payload.mem_free;
-      self.updateDom(self.config.animationSpeed);
-    }
-
-    if (notification === 'SYSTEM_STORAGE') {
-      if ( this.config.debug === 1 ) {
-  			Log.info('received SYSTEM_STORAGE');
-  			Log.info(payload);
-  		}
-      this.storage_size = payload.store_size;
-      this.storage_used = payload.store_used;
-      this.storage_free = payload.store_avail;
-      self.updateDom(self.config.animationSpeed);
-    }
-
     if (notification === this.config.sockrcv) {
       if ( this.config.debug === 1 ) {
   			Log.info('received ' + this.config.sockrcv);
   			Log.info(payload);
 	    }
-      self.processWeather(JSON.parse(payload));
+      self.processWeather(payload);
     }
 
+  },
+  
+  wbCode2Text: function(c) {
+	  var ch = c.toString() ;
+	  if (ch.substr(0,2) == "80") {
+		  return this.wbCode2TextTable[ch] ;
+	  } else {
+		  return this.wbCode2TextTable[ch.substr(0,2)] ;
+	  }
   }
 
 });
